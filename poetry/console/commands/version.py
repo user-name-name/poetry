@@ -13,10 +13,11 @@ class VersionCommand(Command):
 
     help = """\
 The version command bumps the version of the project
-and writes the new version back to <comment>pyproject.toml</>.
+and writes the new version back to <comment>pyproject.toml</>. 
+Current just prints the current version.
 
 The new version should ideally be a valid semver string or a valid bump rule:
-patch, minor, major, prepatch, preminor, premajor, prerelease.
+patch, minor, major, prepatch, preminor, premajor, prerelease, current.
 """
 
     RESERVED = {
@@ -27,24 +28,29 @@ patch, minor, major, prepatch, preminor, premajor, prerelease.
         "preminor",
         "prepatch",
         "prerelease",
+        "current",
     }
 
     def handle(self):
         version = self.argument("version")
 
-        version = self.increment_version(self.poetry.package.pretty_version, version)
 
-        self.line(
-            "Bumping version from <comment>{}</> to <info>{}</>".format(
-                self.poetry.package.pretty_version, version
+        if version == "current":
+            self.line(self.poetry.package.pretty_version)
+        else:
+            version = self.increment_version(self.poetry.package.pretty_version, version)
+
+            self.line(
+                "Bumping version from <comment>{}</> to <info>{}</>".format(
+                    self.poetry.package.pretty_version, version
+                )
             )
-        )
+            
+            content = self.poetry.file.read()
+            poetry_content = content["tool"]["poetry"]
+            poetry_content["version"] = version.text
 
-        content = self.poetry.file.read()
-        poetry_content = content["tool"]["poetry"]
-        poetry_content["version"] = version.text
-
-        self.poetry.file.write(content)
+            self.poetry.file.write(content)
 
     def increment_version(self, version, rule):
         from poetry.semver import Version
